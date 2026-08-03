@@ -142,6 +142,73 @@ class AnthropicProvider:
         return "".join(block.text for block in resp.content if block.type == "text").strip()
 
 
+_THINK_OPEN = "<think>"
+_THINK_CLOSE = "</think>"
+
+
+def strip_reasoning(text: str) -> str:
+    """Drop the reasoning block some models emit before their answer.
+
+    An unclosed block means the model spent its whole budget thinking and never
+    produced an answer. Returning the reasoning would put a monologue in front
+    of a customer, so that case returns empty and the policy layer treats it as
+    a failed draft.
+    """
+    if _THINK_CLOSE in text:
+        return text.split(_THINK_CLOSE, 1)[1].strip()
+    if _THINK_OPEN in text:
+        return ""
+    return text.strip()
+
+
+class MiniMaxProvider:
+    """MiniMax M2 over its OpenAI-compatible endpoint.
+
+    M2 is a reasoning model, so `max_tokens` carries an extra allowance for the
+    reasoning block on top of what the caller asked for. Without it the answer
+    gets truncated away and every draft comes back empty.
+    """
+
+    name = "minimax"
+    REASONING_ALLOWANCE = 800
+
+    def __init__(
+        self,
+        model: str | None = None,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        timeout: float = 180.0,
+    ) -> None:
+        self.model = model or os.environ.get("MINIMAX_MODEL") or "MiniMax-M2"
+        self.base_url = base_url or os.environ.get("MINIMAX_BASE_URL") or "https://api.minimax.io/v1"
+        self.timeout = timeout
+        self._api_key = api_key or os.environ.get("MINIMAX_API_KEY")
+        if not self._api_key:
+            raise RuntimeError("MINIMAX_API_KEY is not set")
+        self._client = None
+
+    def complete(self, prompt: str, *, max_tokens: int = 512, temperature: float = 0.3) -> str:
+        if self._client is None:
+            from openai import OpenAI  # noqa: PLC0415 - deliberate lazy import
+
+            self._client = OpenAI(
+                api_key=self._api_key,
+                base_url=self.base_url,
+                timeout=self.timeout,
+                max_retries=0,
+            )
+        resp = self._client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": "You are a customer support agent. Follow the task markers in the user message exactly."},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=temperature,
+            max_tokens=max_tokens + self.REASONING_ALLOWANCE,
+        )
+        return strip_reasoning(resp.choices[0].message.content or "")
+
+
 def get_provider(name: str | None = None) -> Provider:
     """Resolve a provider by name, defaulting to the offline stub."""
     name = (name or os.environ.get("SUPPORT_AGENT_PROVIDER") or "stub").lower()
@@ -149,6 +216,8 @@ def get_provider(name: str | None = None) -> Provider:
         return RuleBasedStub()
     if name == "anthropic":
         return AnthropicProvider()
+    if name == "minimax":
+        return MiniMaxProvider()
     raise ValueError(f"unknown provider: {name!r}")
 
 

@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from support_agent.llm import classify_prompt, draft_prompt, neutralise
+from support_agent.llm import classify_prompt, draft_prompt, neutralise, strip_reasoning
 from support_agent.policy import _PII_ECHO, _PROMISES, _UNGROUNDED_NUMBER, check
 
 
@@ -72,6 +72,28 @@ class TestUntrustedTextCannotForgePromptFields:
     def test_ordinary_brackets_survive(self):
         text = "the error is [Errno 2] and my array is [1, 2, 3]"
         assert neutralise(text) == text
+
+
+class TestReasoningBlocksNeverReachCustomers:
+    """Reasoning models emit their working. None of it belongs in a reply."""
+
+    def test_reasoning_block_is_removed(self):
+        raw = "<think>The customer wants a refund. Company policy says...</think>I can look into that."
+        assert strip_reasoning(raw) == "I can look into that."
+
+    def test_unclosed_block_yields_nothing_rather_than_a_monologue(self):
+        """Budget spent thinking means there is no answer, not a partial one."""
+        assert strip_reasoning("<think>Let me consider the options and the") == ""
+
+    def test_plain_output_is_untouched(self):
+        assert strip_reasoning("  I can look into that.  ") == "I can look into that."
+
+    def test_only_the_first_block_is_stripped(self):
+        raw = "<think>reasoning</think>Answer mentioning </think> in passing."
+        assert strip_reasoning(raw) == "Answer mentioning </think> in passing."
+
+    def test_empty_result_is_caught_downstream_as_a_failed_draft(self):
+        assert not check(strip_reasoning("<think>unfinished"))
 
 
 class TestPolicyPatternsAreLinear:
