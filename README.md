@@ -1,5 +1,7 @@
 # support-agent
 
+[![ci](https://github.com/alpha-0619/langgraph-support-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/alpha-0619/langgraph-support-agent/actions/workflows/ci.yml)
+
 A customer support triage agent built as an explicit LangGraph state graph.
 
 Generating the reply is the easy part. The work in production is everything
