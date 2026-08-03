@@ -1,11 +1,8 @@
 """Deterministic policy checks on generated text.
 
-These are rules, not a model call, and that is the point. An LLM asked to
-police another LLM gives you a different answer on Tuesday. Compliance rules
-that decide whether something reaches a customer need to be reproducible and
-auditable, so they live here as code with a test each.
-
-The model handles language. Rules handle whether it is allowed out.
+Rules rather than a second model call, because a check that gates delivery to a
+customer has to give the same verdict on the same draft every time and has to be
+readable by whoever audits an incident afterwards. Each rule has a test.
 """
 
 from __future__ import annotations
@@ -20,8 +17,8 @@ _PROMISES = re.compile(
     re.I,
 )
 
-# Invented specifics. A support agent quoting a number it did not retrieve is
-# the single most expensive failure mode in this kind of system.
+# Quantities the agent did not retrieve. Wrong figures quoted confidently are
+# the expensive failure mode here, since the transcript backs the customer up.
 _UNGROUNDED_NUMBER = re.compile(
     r"(?<![\w.])(?:\$\s?\d[\d,]*(?:\.\d+)?|\d[\d,]*\s?(?:%|percent|days?|hours?|business days?))",
     re.I,

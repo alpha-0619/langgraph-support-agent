@@ -1,11 +1,10 @@
 """Contact lifecycle state machine.
 
-Six stages, evaluated in priority order. This runs before any model call:
-the stage decides how much effort a message is worth, so cheap deterministic
-logic gets to short-circuit before we spend tokens.
+Six stages, evaluated in priority order, computed before any model call so the
+stage can decide how much effort the message is worth.
 
-Ported from a production messaging system where the same six stages drive
-routing across ~9 concurrent agent instances.
+The shape is taken from a production messaging system where six equivalent
+stages drive routing across nine concurrent agent instances.
 """
 
 from __future__ import annotations
@@ -81,9 +80,8 @@ def determine_stage(
 ) -> tuple[Stage, str]:
     """Return (stage, human-readable reason).
 
-    Priority order matters. Dormancy outranks buying signals on purpose: a
-    message after three days of silence is a re-engagement, not a hot lead,
-    and treating it as a hot lead is how you sound like a robot.
+    Order is deliberate. Dormancy is checked ahead of buying signals because a
+    message after three days of silence is a re-engagement first.
     """
     now = now or datetime.now()
     signals = signals or {}
@@ -134,8 +132,8 @@ def determine_stage(
 def effort_budget(stage: Stage) -> int:
     """How many policy-rewrite attempts this stage is worth.
 
-    0 means the graph will not spend a second model call arguing with itself
-    over a message from someone who has never paid and just said "hi".
+    One means a draft that breaks policy is escalated rather than retried, which
+    is the right trade for contacts with nothing at stake yet.
     """
     return {
         Stage.NEW: 1,

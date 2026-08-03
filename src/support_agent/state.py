@@ -1,8 +1,8 @@
 """Graph state.
 
-One dict flows through every node. Nodes return partial updates; LangGraph
-merges them. `trace` is the exception: it accumulates instead of overwriting,
-which is what makes a finished run auditable after the fact.
+One dict flows through every node. Nodes return partial updates and LangGraph
+merges them. `trace` is the exception: it accumulates rather than overwrites, so
+a finished run can be read back step by step.
 """
 
 from __future__ import annotations

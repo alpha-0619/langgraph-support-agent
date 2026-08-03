@@ -1,14 +1,11 @@
 """Model access, behind a narrow interface.
 
-Two reasons the graph never imports an SDK directly:
+The graph never imports an SDK directly, for two reasons. `RuleBasedStub` makes
+every branch reachable without a network call or an API key, which keeps the
+suite runnable anywhere. And changing provider stays a config change.
 
-1. Tests. `RuleBasedStub` makes every branch in the graph reachable without a
-   network call or an API key, so `pytest` is a real regression suite rather
-   than a smoke test that gets skipped in CI.
-2. Swapping providers is a config change, not a refactor.
-
-The stub is deliberately dumb. It is not pretending to be a model; it is a
-fixture that lets the control flow be tested in isolation from model quality.
+The stub is deliberately crude. It is a fixture for exercising control flow, not
+an attempt to approximate a model.
 """
 
 from __future__ import annotations

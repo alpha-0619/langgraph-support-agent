@@ -16,9 +16,9 @@
            |-- approve -------------------------> send   -> END
            `-- reject --------------------------> reject -> END
 
-Three things here are the reason this is a graph and not a chain: the two
-gates that can end the run before any model call, the fallback edge out of the
-suppressed fast path, and the bounded rewrite loop.
+The parts that need a graph rather than a chain: two gates that can end the run
+before any model call, the fallback edge out of a suppressed fast path, and the
+bounded rewrite loop.
 """
 
 from __future__ import annotations

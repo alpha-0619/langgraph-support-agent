@@ -1,8 +1,7 @@
 """Mutation check: break one thing on purpose, confirm the suite notices.
 
-A green suite proves nothing until you have watched it go red for the right
-reason. Each mutation below removes one specific safety property and names the
-test that must catch it. If a mutation survives, that test is decorative.
+Each entry removes one safety property and names the test that has to catch it.
+A mutation that survives means its guard test is not testing what it claims to.
 
     python scripts/mutation_check.py
 """

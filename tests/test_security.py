@@ -1,8 +1,4 @@
-"""Regressions for the two findings from the pre-publication security pass.
-
-Both sat in the features this repo is loudest about, which is the usual place
-for them to sit.
-"""
+"""Regressions for the two findings in docs/security-review.md."""
 
 import time
 

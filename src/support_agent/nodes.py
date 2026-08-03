@@ -1,8 +1,8 @@
 """Graph nodes and the dependencies they need.
 
-Every node takes the state and returns a partial update. Nothing here imports
-LangGraph except the human-approval node, which needs `interrupt`. That keeps
-the business logic testable on its own, without building a graph first.
+Every node takes the state and returns a partial update. The only LangGraph
+import is `interrupt`, used by the approval node, so the rest stays testable
+without building a graph first.
 """
 
 from __future__ import annotations
@@ -23,8 +23,8 @@ from .state import SupportState
 class DedupStore:
     """Remembers what we already handled, so a double-send is a no-op.
 
-    Real deployments back this with Redis. The interface is two methods, which
-    is the whole reason it is a class and not a module-level dict.
+    Two methods, so a deployment can back it with Redis without touching the
+    graph.
     """
 
     def __init__(self, ttl_seconds: float = 900.0) -> None:
@@ -53,10 +53,10 @@ class DedupStore:
 class CannedLibrary:
     """Pre-approved responses for intents that must not be improvised.
 
-    `blocked_for` is the interesting part. A canned reply can be suppressed
-    (already sent recently, campaign paused, contact opted out). When that
-    happens the request must NOT vanish: it falls through to the model. Silent
-    drops on a blocked fast path are how customers end up ignored for a day.
+    `blocked_for` covers suppression: already sent recently, campaign paused,
+    contact opted out. A suppressed entry has to fall through to the model
+    rather than return nothing, or the customer is ignored while the logs show
+    a clean run.
     """
 
     def __init__(
@@ -82,8 +82,7 @@ class CannedLibrary:
 class KnowledgeBase:
     """Stand-in for the retrieval layer.
 
-    Swapping this for pgvector or Qdrant means implementing `search`. The graph
-    does not care, which is the point of keeping retrieval behind one method.
+    Swapping in pgvector or Qdrant means implementing `search` and nothing else.
     """
 
     def __init__(self, docs: dict[str, list[str]] | None = None) -> None:
@@ -161,11 +160,11 @@ def make_nodes(deps: Deps) -> dict:
         }
 
     def triage_gate(state: SupportState) -> dict:
-        """Not every message deserves a reply.
+        """Not every message needs a reply.
 
-        Answering everything trains people to treat the channel as a toy and
-        burns tokens on messages that were never a question. Silence is a valid
-        outcome, but it has to be a recorded decision, not an accident.
+        Skipping is a legitimate outcome as long as it is recorded with a
+        reason, which is why this sets `halt_reason` rather than returning
+        quietly.
         """
         contact = state.get("contact", {})
         stage = state.get("lifecycle", "")
@@ -191,8 +190,7 @@ def make_nodes(deps: Deps) -> dict:
         if text:
             return {"draft": text, "trace": ["canned: hit"]}
         if blocked:
-            # The edge that matters. Suppressed fast path hands off to the model
-            # instead of returning nothing.
+            # Hand off to the model rather than returning nothing.
             return {
                 "canned_blocked": True,
                 "trace": ["canned: suppressed, falling through to model"],
@@ -243,8 +241,8 @@ def make_nodes(deps: Deps) -> dict:
     def approval_gate(state: SupportState) -> dict:
         """Pause the run and wait for a person.
 
-        `interrupt` checkpoints the whole graph. The process can die here and a
-        different worker can resume it hours later with the reviewer's decision.
+        `interrupt` checkpoints the graph, so the process can die here and a
+        different worker can resume with the reviewer's decision.
         """
         decision = interrupt(
             {

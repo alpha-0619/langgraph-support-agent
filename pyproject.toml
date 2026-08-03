@@ -6,8 +6,25 @@ build-backend = "setuptools.build_meta"
 name = "support-agent"
 version = "0.1.0"
 description = "A support-triage agent built as an explicit LangGraph state graph, with gates, a bounded rewrite loop, and human approval."
+readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Yu Fong C." }]
+keywords = ["langgraph", "agents", "llm", "customer-support", "human-in-the-loop"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = ["langgraph>=1.0"]
+
+[project.urls]
+Source = "https://github.com/alpha-0619/langgraph-support-agent"
+Issues = "https://github.com/alpha-0619/langgraph-support-agent/issues"
 
 [project.optional-dependencies]
 anthropic = ["anthropic>=0.40"]
