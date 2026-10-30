@@ -41,10 +41,10 @@ flowchart TD
 
 Three properties are why this is a graph rather than a chain.
 
-Dedup and triage both run before classification, so a repeated message or a
-one-word greeting from a contact who has never paid costs nothing. Each records
-why it stopped, which makes a skipped message a decision rather than an
-accident.
+Dedup runs before anything else, so a repeated message costs nothing. Triage
+runs right after classification, so a one-word greeting from a contact who has
+never paid stops before any reply is drafted. Each records why it stopped,
+which makes a skipped message a decision rather than an accident.
 
 Canned replies can be suppressed for a given contact, and when that happens the
 request falls through to the model. Returning early on a blocked fast path
