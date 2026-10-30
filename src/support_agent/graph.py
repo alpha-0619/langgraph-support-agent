@@ -17,8 +17,8 @@
            `-- reject --------------------------> reject -> END
 
 The parts that need a graph rather than a chain: two gates that can end the run
-before any model call, the fallback edge out of a suppressed fast path, and the
-bounded rewrite loop.
+early (dedup before any model call, triage before any reply is drafted), the
+fallback edge out of a suppressed fast path, and the bounded rewrite loop.
 """
 
 from __future__ import annotations
